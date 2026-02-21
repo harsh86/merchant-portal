@@ -1,0 +1,45 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write(src/**)",
+      "Write(backend/**)",
+      "Write(frontend/**)",
+      "Write(db/**)",
+      "Write(docs/**)",
+      "Write(.claude/**)",
+      "Edit",
+      "MultiEdit",
+      "Glob",
+      "Grep",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(npx:*)",
+      "Bash(node:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(git branch:*)",
+      "Bash(git log:*)",
+      "Bash(gh issue:*)",
+      "Bash(gh pr:*)",
+      "Bash(docker compose:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "TodoWrite"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(**/secrets/**)",
+      "Bash(rm -rf:*)",
+      "Bash(sudo:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}
