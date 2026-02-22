@@ -1,0 +1,251 @@
+# GitHub Labels Configuration for AI Impact and DORA Metrics Tracking
+# Install with: gh label create -f .github/labels.yml
+# Or use GitHub CLI: gh label sync -f .github/labels.yml
+
+# ============================================
+# AI IMPACT LABELS
+# ============================================
+
+- name: "ai:100-generated"
+  color: "7B68EE"
+  description: "100% AI-generated code"
+
+- name: "ai:75-generated"
+  color: "9370DB"
+  description: "75%+ AI-generated code"
+
+- name: "ai:50-generated"
+  color: "BA55D3"
+  description: "50%+ AI-generated code"
+
+- name: "ai:25-generated"
+  color: "DDA0DD"
+  description: "25%+ AI-generated code"
+
+- name: "ai:assisted"
+  color: "E6E6FA"
+  description: "AI-assisted (mostly human-written)"
+
+- name: "human-only"
+  color: "D3D3D3"
+  description: "No AI assistance used"
+
+# ============================================
+# DORA METRICS LABELS
+# ============================================
+
+- name: "dora:deployment"
+  color: "0E8A16"
+  description: "Triggers deployment (deployment frequency tracking)"
+
+- name: "dora:hotfix"
+  color: "D93F0B"
+  description: "Hotfix for production issue (change failure rate)"
+
+- name: "dora:incident"
+  color: "B60205"
+  description: "Production incident (time to restore tracking)"
+
+- name: "dora:lead-time"
+  color: "1D76DB"
+  description: "Track lead time for this change"
+
+- name: "dora:rollback"
+  color: "E99695"
+  description: "Deployment rollback (change failure tracking)"
+
+# ============================================
+# TYPE LABELS
+# ============================================
+
+- name: "type:feature"
+  color: "00FF00"
+  description: "New feature or enhancement"
+
+- name: "type:bugfix"
+  color: "FF0000"
+  description: "Bug fix"
+
+- name: "type:refactor"
+  color: "FBCA04"
+  description: "Code refactoring (no functional change)"
+
+- name: "type:docs"
+  color: "0075CA"
+  description: "Documentation only"
+
+- name: "type:test"
+  color: "BFD4F2"
+  description: "Test-related changes"
+
+- name: "type:infra"
+  color: "5319E7"
+  description: "Infrastructure/DevOps changes"
+
+- name: "type:security"
+  color: "D73A4A"
+  description: "Security-related changes"
+
+- name: "type:performance"
+  color: "FFA500"
+  description: "Performance optimization"
+
+- name: "type:chore"
+  color: "EDEDED"
+  description: "Maintenance tasks, dependencies, etc."
+
+# ============================================
+# PRIORITY LABELS
+# ============================================
+
+- name: "P1:critical"
+  color: "B60205"
+  description: "Critical priority (production down, data loss, security)"
+
+- name: "P2:major"
+  color: "D93F0B"
+  description: "Major priority (feature broken, degraded performance)"
+
+- name: "P3:minor"
+  color: "FBCA04"
+  description: "Minor priority (nice-to-have, small bugs)"
+
+- name: "P4:low"
+  color: "C2E0C6"
+  description: "Low priority (backlog, future consideration)"
+
+# ============================================
+# QUALITY LABELS
+# ============================================
+
+- name: "quality:coverage-increase"
+  color: "006B75"
+  description: "Increases test coverage"
+
+- name: "quality:tech-debt"
+  color: "795548"
+  description: "Technical debt reduction"
+
+- name: "quality:security-fix"
+  color: "D73A4A"
+  description: "Security improvement or fix"
+
+- name: "quality:performance"
+  color: "FF8C00"
+  description: "Performance improvement"
+
+- name: "quality:code-smell"
+  color: "8B4513"
+  description: "Code smell that needs addressing"
+
+- name: "quality:needs-tests"
+  color: "D4C5F9"
+  description: "Needs test coverage"
+
+# ============================================
+# VELOCITY LABELS
+# ============================================
+
+- name: "velocity:quick-win"
+  color: "00FF7F"
+  description: "Quick win (< 2 hours)"
+
+- name: "velocity:medium"
+  color: "FFD700"
+  description: "Medium effort (2-8 hours)"
+
+- name: "velocity:complex"
+  color: "FF6347"
+  description: "Complex task (> 1 day)"
+
+- name: "velocity:epic"
+  color: "8B008B"
+  description: "Epic (multiple PRs, > 1 week)"
+
+- name: "velocity:blocked"
+  color: "B60205"
+  description: "Blocked by external dependency"
+
+# ============================================
+# STATUS LABELS
+# ============================================
+
+- name: "status:in-progress"
+  color: "1D76DB"
+  description: "Currently being worked on"
+
+- name: "status:blocked"
+  color: "B60205"
+  description: "Blocked and cannot proceed"
+
+- name: "status:needs-review"
+  color: "FBCA04"
+  description: "Needs code review"
+
+- name: "status:needs-testing"
+  color: "BFD4F2"
+  description: "Needs testing/QA"
+
+- name: "status:ready-to-merge"
+  color: "0E8A16"
+  description: "Approved and ready to merge"
+
+- name: "status:on-hold"
+  color: "FFA500"
+  description: "On hold, not actively worked"
+
+# ============================================
+# COMPONENT LABELS
+# ============================================
+
+- name: "component:frontend"
+  color: "61DAFB"
+  description: "Frontend/React changes"
+
+- name: "component:backend"
+  color: "68A063"
+  description: "Backend/Node.js changes"
+
+- name: "component:database"
+  color: "336791"
+  description: "Database/PostgreSQL changes"
+
+- name: "component:api"
+  color: "FF6C37"
+  description: "API changes"
+
+- name: "component:devops"
+  color: "2496ED"
+  description: "DevOps/Docker/CI-CD changes"
+
+# ============================================
+# SPECIAL LABELS
+# ============================================
+
+- name: "breaking-change"
+  color: "B60205"
+  description: "Contains breaking changes"
+
+- name: "dependencies"
+  color: "0366D6"
+  description: "Dependency updates"
+
+- name: "good-first-issue"
+  color: "7057FF"
+  description: "Good for newcomers"
+
+- name: "help-wanted"
+  color: "008672"
+  description: "Extra attention needed"
+
+- name: "duplicate"
+  color: "CFD3D7"
+  description: "Duplicate issue or PR"
+
+- name: "wontfix"
+  color: "FFFFFF"
+  description: "Will not be worked on"
+
+- name: "invalid"
+  color: "E4E669"
+  description: "Invalid issue"

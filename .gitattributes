@@ -1,0 +1,214 @@
+# Git Attributes Configuration
+# Ensures consistent line endings and accurate language statistics
+
+# ============================================
+# AUTO-DETECT TEXT FILES
+# ============================================
+* text=auto
+
+# ============================================
+# SOURCE CODE - ENFORCE LF LINE ENDINGS
+# ============================================
+
+# JavaScript/TypeScript
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+
+# JSON
+*.json text eol=lf
+*.jsonc text eol=lf
+
+# Configuration Files
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.ini text eol=lf
+*.conf text eol=lf
+
+# Markdown and Documentation
+*.md text eol=lf
+*.mdx text eol=lf
+*.txt text eol=lf
+
+# Web Files
+*.html text eol=lf
+*.htm text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.sass text eol=lf
+*.less text eol=lf
+
+# SQL and Database
+*.sql text eol=lf
+
+# Shell Scripts
+*.sh text eol=lf
+*.bash text eol=lf
+*.zsh text eol=lf
+
+# Docker
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
+.dockerignore text eol=lf
+docker-compose*.yml text eol=lf
+
+# Git
+.gitignore text eol=lf
+.gitattributes text eol=lf
+.gitmessage text eol=lf
+
+# Node/NPM
+package.json text eol=lf
+package-lock.json text eol=lf
+.npmrc text eol=lf
+.nvmrc text eol=lf
+
+# Linting/Formatting
+.eslintrc* text eol=lf
+.prettierrc* text eol=lf
+.editorconfig text eol=lf
+
+# CI/CD
+.travis.yml text eol=lf
+.gitlab-ci.yml text eol=lf
+Jenkinsfile text eol=lf
+
+# ============================================
+# BINARY FILES - DO NOT MODIFY
+# ============================================
+
+# Images
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.webp binary
+*.bmp binary
+
+# Fonts
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.otf binary
+
+# Archives
+*.zip binary
+*.tar binary
+*.gz binary
+*.tgz binary
+*.rar binary
+*.7z binary
+
+# Documents
+*.pdf binary
+*.doc binary
+*.docx binary
+*.xls binary
+*.xlsx binary
+*.ppt binary
+*.pptx binary
+
+# Other Binary
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+
+# ============================================
+# VENDORED/GENERATED CODE - EXCLUDE FROM STATS
+# ============================================
+
+# Node Modules
+node_modules/** linguist-vendored
+**/node_modules/** linguist-vendored
+
+# Dependencies
+vendor/** linguist-vendored
+**/vendor/** linguist-vendored
+
+# Build Output
+dist/** linguist-generated
+build/** linguist-generated
+**/dist/** linguist-generated
+**/build/** linguist-generated
+*.min.js linguist-generated
+*.min.css linguist-generated
+
+# Generated Files
+*.generated.* linguist-generated
+*-generated.* linguist-generated
+
+# Lock Files
+package-lock.json linguist-generated
+yarn.lock linguist-generated
+pnpm-lock.yaml linguist-generated
+
+# Coverage Reports
+coverage/** linguist-generated
+.nyc_output/** linguist-generated
+
+# ============================================
+# LANGUAGE DETECTION OVERRIDES
+# ============================================
+
+# Ensure proper language detection
+*.jsx linguist-language=JavaScript
+*.tsx linguist-language=TypeScript
+*.vue linguist-language=Vue
+
+# Documentation
+*.md linguist-documentation
+docs/** linguist-documentation
+
+# Configuration files should not count as code
+*.json linguist-language=JSON
+*.yml linguist-language=YAML
+*.yaml linguist-language=YAML
+
+# ============================================
+# DIFF SETTINGS
+# ============================================
+
+# Use specific diff drivers for certain files
+*.json diff=json
+*.md diff=markdown
+
+# Show function names in diffs
+*.js diff=javascript
+*.jsx diff=javascript
+*.ts diff=typescript
+*.tsx diff=typescript
+
+# ============================================
+# MERGE STRATEGIES
+# ============================================
+
+# Always prefer our version for lock files (handle manually)
+package-lock.json merge=ours
+yarn.lock merge=ours
+pnpm-lock.yaml merge=ours
+
+# ============================================
+# EXPORT-IGNORE (for git archive)
+# ============================================
+
+# Exclude from exports/releases
+.github export-ignore
+.vscode export-ignore
+.idea export-ignore
+.editorconfig export-ignore
+.gitignore export-ignore
+.gitattributes export-ignore
+.eslintrc* export-ignore
+.prettierrc* export-ignore
+*.test.js export-ignore
+*.spec.js export-ignore
+tests/ export-ignore
+docs/ export-ignore

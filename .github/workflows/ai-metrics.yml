@@ -1,0 +1,301 @@
+name: AI Impact Metrics Collection
+
+on:
+  pull_request:
+    types: [opened, edited, closed]
+  push:
+    branches:
+      - main
+      - develop
+  schedule:
+    # Run daily at 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  collect-pr-metrics:
+    name: Extract PR Metrics
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Extract AI Impact from PR
+        id: ai-impact
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const body = pr.body || '';
+
+            // Extract AI contribution level
+            const aiLevels = {
+              '100% AI-Generated': 'ai:100-generated',
+              '75%+ AI-Generated': 'ai:75-generated',
+              '50%+ AI-Generated': 'ai:50-generated',
+              '25%+ AI-Generated': 'ai:25-generated',
+              'AI-Assisted': 'ai:assisted',
+              'Human-Only': 'human-only'
+            };
+
+            let aiLabel = 'human-only'; // default
+            for (const [text, label] of Object.entries(aiLevels)) {
+              if (body.includes(`[x] ${text}`) || body.includes(`[X] ${text}`)) {
+                aiLabel = label;
+                break;
+              }
+            }
+
+            // Extract type labels
+            const typeLabels = [];
+            const types = {
+              'Feature': 'type:feature',
+              'Bug Fix': 'type:bugfix',
+              'Refactor': 'type:refactor',
+              'Documentation': 'type:docs',
+              'Tests': 'type:test',
+              'Infrastructure/DevOps': 'type:infra',
+              'Security Fix': 'type:security'
+            };
+
+            for (const [text, label] of Object.entries(types)) {
+              if (body.includes(`[x] ${text}`) || body.includes(`[X] ${text}`)) {
+                typeLabels.push(label);
+              }
+            }
+
+            // Extract DORA labels
+            const doraLabels = [];
+            if (body.includes('[x] This PR triggers a deployment') || body.includes('[X] This PR triggers a deployment')) {
+              doraLabels.push('dora:deployment');
+            }
+            if (body.includes('[x] This is a hotfix') || body.includes('[X] This is a hotfix')) {
+              doraLabels.push('dora:hotfix');
+            }
+            if (body.includes('[x] This fixes an incident') || body.includes('[X] This fixes an incident')) {
+              doraLabels.push('dora:incident');
+            }
+
+            // Extract priority
+            let priorityLabel = null;
+            if (body.includes('[x] P1: Critical') || body.includes('[X] P1: Critical')) {
+              priorityLabel = 'P1:critical';
+            } else if (body.includes('[x] P2: Major') || body.includes('[X] P2: Major')) {
+              priorityLabel = 'P2:major';
+            } else if (body.includes('[x] P3: Minor') || body.includes('[X] P3: Minor')) {
+              priorityLabel = 'P3:minor';
+            }
+
+            // Extract velocity
+            let velocityLabel = null;
+            if (body.includes('[x] Quick Win') || body.includes('[X] Quick Win')) {
+              velocityLabel = 'velocity:quick-win';
+            } else if (body.includes('[x] Medium') || body.includes('[X] Medium')) {
+              velocityLabel = 'velocity:medium';
+            } else if (body.includes('[x] Complex') || body.includes('[X] Complex')) {
+              velocityLabel = 'velocity:complex';
+            } else if (body.includes('[x] Epic') || body.includes('[X] Epic')) {
+              velocityLabel = 'velocity:epic';
+            }
+
+            // Combine all labels
+            const allLabels = [
+              aiLabel,
+              ...typeLabels,
+              ...doraLabels,
+              priorityLabel,
+              velocityLabel
+            ].filter(Boolean);
+
+            core.setOutput('labels', allLabels.join(','));
+
+            return {
+              ai_label: aiLabel,
+              type_labels: typeLabels,
+              dora_labels: doraLabels,
+              priority: priorityLabel,
+              velocity: velocityLabel,
+              all_labels: allLabels
+            };
+
+      - name: Apply Labels to PR
+        if: steps.ai-impact.outputs.labels != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = '${{ steps.ai-impact.outputs.labels }}'.split(',').filter(Boolean);
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                labels: labels
+              });
+              console.log('Applied labels:', labels);
+            }
+
+      - name: Calculate Metrics
+        id: metrics
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+
+            // Get PR files and calculate changes
+            const files = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number
+            });
+
+            const totalAdditions = files.data.reduce((sum, file) => sum + file.additions, 0);
+            const totalDeletions = files.data.reduce((sum, file) => sum + file.deletions, 0);
+            const totalChanges = totalAdditions + totalDeletions;
+            const filesChanged = files.data.length;
+
+            // Calculate lead time if issue number is present
+            const body = pr.body || '';
+            const issueMatch = body.match(/(?:Closes|Fixes|Resolves)\s+#(\d+)/i);
+            let leadTimeDays = null;
+
+            if (issueMatch) {
+              try {
+                const issue = await github.rest.issues.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: parseInt(issueMatch[1])
+                });
+
+                const issueCreated = new Date(issue.data.created_at);
+                const prCreated = new Date(pr.created_at);
+                leadTimeDays = Math.floor((prCreated - issueCreated) / (1000 * 60 * 60 * 24));
+              } catch (error) {
+                console.log('Could not fetch related issue:', error.message);
+              }
+            }
+
+            const metrics = {
+              pr_number: pr.number,
+              additions: totalAdditions,
+              deletions: totalDeletions,
+              total_changes: totalChanges,
+              files_changed: filesChanged,
+              lead_time_days: leadTimeDays,
+              created_at: pr.created_at,
+              merged_at: pr.merged_at
+            };
+
+            console.log('PR Metrics:', JSON.stringify(metrics, null, 2));
+            return metrics;
+
+      - name: Comment Metrics on PR
+        if: github.event.action == 'opened'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const body = `## AI Impact & DORA Metrics (Auto-Generated)
+
+            **Code Changes:**
+            - Lines Added: ${pr.additions}
+            - Lines Deleted: ${pr.deletions}
+            - Files Changed: ${pr.changed_files}
+
+            **Velocity Tracking:**
+            - PR Created: ${new Date(pr.created_at).toISOString()}
+            - Time to Review: _Will be calculated when merged_
+
+            **DORA Metrics:**
+            - Lead Time: _See PR description for issue link tracking_
+            - Deployment Frequency: _Tracked via labels_
+
+            ---
+            _Metrics automatically collected by GitHub Actions_`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: body
+            });
+
+  daily-metrics-report:
+    name: Generate Daily Metrics Report
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          if [ -f package.json ]; then
+            npm ci 2>/dev/null || npm install || true
+          fi
+
+      - name: Run AI Impact Metrics Script
+        run: |
+          if [ -f metrics/track-ai-impact.sh ]; then
+            chmod +x metrics/track-ai-impact.sh
+            ./metrics/track-ai-impact.sh
+          fi
+
+      - name: Run DORA Metrics Script
+        run: |
+          if [ -f metrics/dora-metrics.sh ]; then
+            chmod +x metrics/dora-metrics.sh
+            ./metrics/dora-metrics.sh
+          fi
+
+      - name: Upload Metrics Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrics-report-${{ github.run_number }}
+          path: |
+            metrics/*.json
+            metrics/*.csv
+            metrics/*.md
+          retention-days: 90
+
+  deployment-frequency:
+    name: Track Deployment Frequency
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Record Deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deployment = {
+              sha: context.sha,
+              ref: context.ref,
+              timestamp: new Date().toISOString(),
+              actor: context.actor,
+              event: context.eventName
+            };
+
+            console.log('Deployment recorded:', JSON.stringify(deployment, null, 2));
+
+            // You can send this to your metrics storage/dashboard
+            // For example: send to DataDog, CloudWatch, Grafana, etc.

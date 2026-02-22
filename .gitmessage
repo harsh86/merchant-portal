@@ -1,0 +1,129 @@
+# <type>(<scope>): <subject>
+# |<----  Using a Maximum Of 50 Characters  ---->|
+
+# Explain why this change is being made
+# |<----   Try To Limit Each Line to a Maximum Of 72 Characters   ---->|
+
+# --- AI IMPACT SECTION ---
+# AI Generated: [0-100%] or [X/Y lines]
+# Time Saved: [X hours/minutes]
+# Tools Used: [Claude Code, GitHub Copilot, ChatGPT, etc.]
+
+# --- DORA METRICS SECTION ---
+# Type: [feature|bugfix|hotfix|refactor|docs|test|infra|security]
+# Deployment: [yes|no]
+# Lead Time Start: [YYYY-MM-DD or issue #]
+# Priority: [P1-critical|P2-major|P3-minor]
+
+# --- FOOTER (optional) ---
+# Closes #123
+# Relates to #456
+# Breaking Change: [description if applicable]
+
+# Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+
+# ============================================================================
+# COMMIT MESSAGE GUIDELINES
+# ============================================================================
+#
+# Type: Must be one of the following:
+#   feat:     A new feature
+#   fix:      A bug fix
+#   refactor: A code change that neither fixes a bug nor adds a feature
+#   docs:     Documentation only changes
+#   test:     Adding or updating tests
+#   chore:    Changes to build process or auxiliary tools
+#   perf:     A code change that improves performance
+#   style:    Changes that don't affect the meaning of the code
+#   ci:       Changes to CI configuration files and scripts
+#   build:    Changes that affect the build system or dependencies
+#   revert:   Reverts a previous commit
+#
+# Scope: Optional, can be anything specifying the place of the commit change
+#   Examples: api, frontend, auth, database, ci, etc.
+#
+# Subject: Brief summary in present tense. Not capitalized. No period at end.
+#
+# Body: Explain the motivation for the change. This is the place to explain
+#   "why" rather than "what".
+#
+# AI Impact: Track AI assistance level
+#   - AI Generated: Percentage or lines (e.g., "80%" or "150/200 lines")
+#   - Time Saved: Estimated time saved using AI (e.g., "2 hours")
+#   - Tools Used: List AI tools used
+#
+# DORA Metrics: Track delivery performance
+#   - Type: Classification for metrics tracking
+#   - Deployment: Whether this triggers a deployment
+#   - Lead Time Start: When work began (for lead time calculation)
+#   - Priority: For change failure rate and MTTR tracking
+#
+# Footer: Reference issues and PRs. Use "Closes #123" to auto-close issues.
+#   Breaking changes should be indicated with "Breaking Change:" prefix
+#
+# Co-Authored-By: Used for pair programming or AI assistance
+#   Format: Name <email>
+#
+# ============================================================================
+# EXAMPLES
+# ============================================================================
+#
+# Example 1: AI-Assisted Feature
+# feat(api): add transaction filtering by date range
+#
+# Implement date-based filtering for transaction queries to support
+# analytics dashboard requirements. Added query parameters start_date
+# and end_date to transactions endpoint.
+#
+# AI Generated: 75%
+# Time Saved: 1.5 hours
+# Tools Used: Claude Code
+#
+# Type: feature
+# Deployment: yes
+# Lead Time Start: 2026-02-15
+# Priority: P2-major
+#
+# Closes #42
+#
+# Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+#
+# ============================================================================
+#
+# Example 2: Hotfix
+# fix(auth): prevent token expiration race condition
+#
+# Fix race condition where token refresh could fail during concurrent
+# requests, causing users to be logged out unexpectedly.
+#
+# AI Generated: 30%
+# Time Saved: 30 minutes
+# Tools Used: Claude Code, GitHub Copilot
+#
+# Type: hotfix
+# Deployment: yes
+# Lead Time Start: 2026-02-20
+# Priority: P1-critical
+#
+# Closes #89
+#
+# Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+#
+# ============================================================================
+#
+# Example 3: Human-Only Refactor
+# refactor(database): optimize transaction query indexes
+#
+# Add composite indexes on frequently queried columns to improve
+# dashboard load time by ~60%.
+#
+# AI Generated: 0%
+# Time Saved: 0
+# Tools Used: None
+#
+# Type: refactor
+# Deployment: yes
+# Lead Time Start: 2026-02-18
+# Priority: P2-major
+#
+# ============================================================================
