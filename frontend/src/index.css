@@ -2,8 +2,150 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+/* ==============================================
+   Design System CSS Variables
+   From tokens.js - for easier inspector debugging
+   ============================================== */
+@layer base {
+  :root {
+    /* Primary Colors */
+    --color-primary-50: #eff6ff;
+    --color-primary-500: #3b82f6;
+    --color-primary-600: #2563eb;
+    --color-primary-700: #1d4ed8;
+
+    /* Semantic Colors */
+    --color-success: #22c55e;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+    --color-info: #3b82f6;
+
+    /* Text Colors */
+    --color-text-primary: #111827;
+    --color-text-secondary: #4b5563;
+    --color-text-tertiary: #6b7280;
+
+    /* Surface Colors */
+    --color-surface-base: #ffffff;
+    --color-surface-elevated: #f9fafb;
+    --color-border-default: #d1d5db;
+
+    /* Spacing */
+    --spacing-unit: 4px;
+
+    /* Animation */
+    --duration-fast: 150ms;
+    --duration-normal: 250ms;
+    --duration-slow: 350ms;
+    --easing-default: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Component Sizes */
+    --sidebar-width-expanded: 16rem;
+    --sidebar-width-collapsed: 4.5rem;
+  }
+
+  /* ==============================================
+     Global Resets & Improvements
+     ============================================== */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: #111827;
+    background-color: #f9fafb;
+  }
+
+  /* ==============================================
+     Custom Scrollbar Styling
+     ============================================== */
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f9fafb;
+    border-radius: 6px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db #f9fafb;
+  }
+
+  /* ==============================================
+     Improved Focus States (Accessibility)
+     ============================================== */
+  *:focus {
+    outline: none;
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+  }
+
+  /* Remove focus ring on mouse click, keep for keyboard */
+  *:focus:not(:focus-visible) {
+    outline: none;
+    box-shadow: none;
+  }
+
+  /* ==============================================
+     Selection Styling
+     ============================================== */
+  ::selection {
+    background-color: #dbeafe;
+    color: #1e3a8a;
+  }
+
+  ::-moz-selection {
+    background-color: #dbeafe;
+    color: #1e3a8a;
+  }
+
+  /* ==============================================
+     Reduce Motion (Accessibility)
+     ============================================== */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }

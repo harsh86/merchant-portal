@@ -1,3 +1,6 @@
+import tokens from './src/styles/tokens.js';
+import plugin from 'tailwindcss/plugin';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -6,48 +9,72 @@ export default {
   ],
   theme: {
     extend: {
+      // Inject design tokens
       colors: {
-        'status-completed': '#10b981',
-        'status-pending': '#f59e0b',
-        'status-failed': '#ef4444',
-        'status-processing': '#3b82f6',
-        'status-refunded': '#8b5cf6',
-        'status-cancelled': '#6b7280',
+        ...tokens.colors,
+        // Legacy status colors for backward compatibility
+        'status-completed': tokens.colors.success[500],
+        'status-pending': tokens.colors.warning[500],
+        'status-failed': tokens.colors.error[500],
+        'status-processing': tokens.colors.primary[500],
+        'status-refunded': tokens.colors.accent.purple[500],
+        'status-cancelled': tokens.colors.gray[500],
       },
+      fontFamily: tokens.typography.fontFamily,
+      fontSize: tokens.typography.fontSize,
+      fontWeight: tokens.typography.fontWeight,
+      letterSpacing: tokens.typography.letterSpacing,
+      spacing: tokens.spacing,
+      borderRadius: tokens.borderRadius,
+      boxShadow: tokens.elevation,
+      zIndex: tokens.zIndex,
       backdropBlur: {
         xs: '2px',
+        sm: '4px',
+        md: '12px',
+        lg: '16px',
+        xl: '24px',
       },
       animation: {
-        'fade-in': 'fadeIn 0.5s ease-in',
-        'slide-up': 'slideUp 0.5s ease-out',
-        'slide-down': 'slideDown 0.5s ease-out',
-        'scale-in': 'scaleIn 0.3s ease-out',
+        'fade-in': 'fadeIn 250ms ease-out',
+        'fade-out': 'fadeOut 250ms ease-in',
+        'slide-up': 'slideUp 300ms ease-out',
+        'slide-down': 'slideDown 300ms ease-out',
+        'slide-in-left': 'slideInLeft 300ms ease-out',
+        'slide-in-right': 'slideInRight 300ms ease-out',
+        'scale-in': 'scaleIn 200ms ease-out',
         'shimmer': 'shimmer 2s linear infinite',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'bounce-subtle': 'bounce 1s ease-in-out infinite',
       },
-      keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        slideUp: {
-          '0%': { transform: 'translateY(20px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
-        },
-        slideDown: {
-          '0%': { transform: 'translateY(-20px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
-        },
-        scaleIn: {
-          '0%': { transform: 'scale(0.9)', opacity: '0' },
-          '100%': { transform: 'scale(1)', opacity: '1' },
-        },
-        shimmer: {
-          '0%': { transform: 'translateX(-100%)' },
-          '100%': { transform: 'translateX(100%)' },
-        },
-      },
+      keyframes: tokens.animation.keyframes,
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/typography'),
+
+    // Custom glassmorphism utilities
+    plugin(function({ addUtilities }) {
+      addUtilities({
+        '.glass': {
+          'background': 'rgba(255, 255, 255, 0.7)',
+          'backdrop-filter': 'blur(12px)',
+          '-webkit-backdrop-filter': 'blur(12px)',
+          'border': '1px solid rgba(255, 255, 255, 0.18)',
+        },
+        '.glass-strong': {
+          'background': 'rgba(255, 255, 255, 0.9)',
+          'backdrop-filter': 'blur(16px)',
+          '-webkit-backdrop-filter': 'blur(16px)',
+          'border': '1px solid rgba(255, 255, 255, 0.25)',
+        },
+        '.glass-subtle': {
+          'background': 'rgba(255, 255, 255, 0.5)',
+          'backdrop-filter': 'blur(8px)',
+          '-webkit-backdrop-filter': 'blur(8px)',
+          'border': '1px solid rgba(255, 255, 255, 0.1)',
+        },
+      });
+    }),
+  ],
 }
