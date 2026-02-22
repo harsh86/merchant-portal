@@ -20,6 +20,7 @@ import webhookRoutes from './routes/webhooks.js';
 import transactionRoutes from './routes/transactions.js';
 import analyticsRoutes from './routes/analytics.js';
 import healthRoutes from './routes/health.js';
+import metricsRoutes from './routes/metrics.js';
 
 // Load environment variables
 dotenv.config();
@@ -45,6 +46,7 @@ app.use('/health', healthRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/metrics', metricsRoutes);
 
 // 404 handler (must be after all routes)
 app.use(notFoundHandler);
