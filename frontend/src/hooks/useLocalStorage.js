@@ -35,18 +35,20 @@ export function useLocalStorage(key, initialValue) {
   // Return a wrapped version of useState's setter function that persists to localStorage
   const setValue = useCallback((value) => {
     try {
-      // Allow value to be a function so we have same API as useState
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue((currentValue) => {
+        // Allow value to be a function so we have same API as useState
+        const valueToStore = value instanceof Function ? value(currentValue) : value;
 
-      setStoredValue(valueToStore);
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        }
 
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, JSON.stringify(valueToStore));
-      }
+        return valueToStore;
+      });
     } catch (error) {
       console.error(`Error setting localStorage key "${key}":`, error);
     }
-  }, [key, storedValue]);
+  }, [key]);
 
   // Remove value from localStorage
   const removeValue = useCallback(() => {
@@ -63,6 +65,10 @@ export function useLocalStorage(key, initialValue) {
 
   // Listen for changes to this key in other tabs/windows
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     const handleStorageChange = (e) => {
       if (e.key === key && e.newValue !== null) {
         try {
