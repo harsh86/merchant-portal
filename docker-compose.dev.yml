@@ -20,8 +20,6 @@ services:
   postgres:
     ports:
       - "5433:5432"  # Expose for local database tools (DBeaver, pgAdmin)
-    environment:
-      - POSTGRES_PASSWORD=dev_password_change_me  # Weaker password for dev only
     command:
       - "postgres"
       - "-c"

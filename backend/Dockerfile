@@ -22,7 +22,7 @@ FROM base AS development
 COPY package*.json ./
 RUN npm ci && npm cache clean --force
 COPY . .
-USER node
+# Note: Not using USER node in dev to avoid permission issues with volume mounts
 EXPOSE 3000
 CMD ["npm", "run", "dev"]
 
