@@ -6,7 +6,7 @@
 
 import { LayoutDashboard, TrendingUp, BarChart3 } from 'lucide-react';
 import { useLayout } from '../contexts/LayoutContext';
-import { Sidebar, TopBar, MobileNav } from './layout';
+import { Sidebar, TopBar, MobileNav } from './layout/index.js';
 import { cn } from '../styles/utils';
 
 // Navigation items configuration
