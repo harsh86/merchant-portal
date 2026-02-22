@@ -75,6 +75,33 @@ const Layout = ({ children }) => {
                 </div>
               </Link>
             </li>
+            <li>
+              <Link
+                to="/metrics"
+                className={`block px-4 py-3 rounded-lg transition-colors ${
+                  isActive('/metrics')
+                    ? 'bg-blue-500 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <div className="flex items-center">
+                  <svg
+                    className="w-5 h-5 mr-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                    />
+                  </svg>
+                  <span className="font-medium">Metrics</span>
+                </div>
+              </Link>
+            </li>
           </ul>
         </nav>
       </aside>
@@ -86,7 +113,11 @@ const Layout = ({ children }) => {
           <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-gray-800">
-                {location.pathname === '/transactions' ? 'Transactions' : 'Analytics Dashboard'}
+                {location.pathname === '/transactions'
+                  ? 'Transactions'
+                  : location.pathname === '/analytics'
+                  ? 'Analytics Dashboard'
+                  : 'AI Impact & DORA Metrics'}
               </h2>
 
               <div className="flex items-center space-x-4">

@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Layout from './components/Layout';
 import Transactions from './pages/Transactions';
 import Analytics from './pages/Analytics';
+import MetricsDashboard from './pages/MetricsDashboard';
 
 /**
  * Main App component
@@ -29,6 +30,7 @@ function App() {
             <Route path="/" element={<Navigate to="/transactions" replace />} />
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/analytics" element={<Analytics />} />
+            <Route path="/metrics" element={<MetricsDashboard />} />
           </Routes>
         </Layout>
       </Router>
