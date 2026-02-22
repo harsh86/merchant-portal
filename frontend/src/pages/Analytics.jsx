@@ -1,28 +1,24 @@
-import {
-  PieChart,
-  Pie,
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  Cell
-} from 'recharts';
+import { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { DollarSign, CreditCard, TrendingUp, Target } from 'lucide-react';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { mockAnalytics } from '../utils/mockData';
 import { formatCurrency, getStatusChartColor, formatShortDate } from '../utils/helpers';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import SkeletonLoader from '../components/SkeletonLoader';
+import MetricCard from '../components/analytics/MetricCard';
+import FilterBar from '../components/analytics/FilterBar';
+import EnhancedDonutChart from '../components/analytics/EnhancedDonutChart';
+import EnhancedAreaChart from '../components/analytics/EnhancedAreaChart';
+import EnhancedBarChart from '../components/analytics/EnhancedBarChart';
+import HeatmapChart from '../components/analytics/HeatmapChart';
+import RadarChart from '../components/analytics/RadarChart';
 
 /**
  * Analytics dashboard page with charts and metrics
- * AI-generated component for analytics visualization
+ * Modernized with glassmorphism design and enhanced visualizations
+ * AI-generated: 100%
  */
 const Analytics = () => {
   // Fetch analytics using React Query (commented out for mock data)
@@ -35,6 +31,21 @@ const Analytics = () => {
   const data = { success: true, data: mockAnalytics };
 
   const analytics = data?.data || mockAnalytics;
+
+  // Filter state
+  const [activeFilters, setActiveFilters] = useState({
+    dateRange: { start: null, end: null },
+    status: [],
+    source: []
+  });
+
+  // Generate mock previous period data for comparison (30% lower than current)
+  const previousPeriodData = useMemo(() => ({
+    totalVolume: analytics.totalVolume * 0.7,
+    totalTransactions: analytics.totalTransactions * 0.75,
+    averageTransactionAmount: analytics.averageTransactionAmount * 0.93,
+    successRate: analytics.successRate * 0.95
+  }), [analytics]);
 
   // Show loading state
   if (isLoading) {
@@ -81,223 +92,157 @@ const Analytics = () => {
   const sourcesData = analytics.topSources.map(item => ({
     source: item.source.charAt(0).toUpperCase() + item.source.slice(1),
     count: item.count,
-    volume: item.volume
+    volume: item.volume,
+    percentage: (item.count / analytics.totalTransactions * 100).toFixed(1)
   }));
 
+  // Prepare data for heatmap (last 90 days)
+  const heatmapData = useMemo(() => {
+    const data = [];
+    const today = new Date();
+    for (let i = 89; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      // Generate random transaction count for demo
+      const count = Math.floor(Math.random() * 100) + 10;
+      data.push({
+        date: date.toISOString().split('T')[0],
+        count,
+        value: count
+      });
+    }
+    return data;
+  }, []);
+
+  // Handle filter changes
+  const handleFilterChange = (filters) => {
+    setActiveFilters(filters);
+    // In production, this would trigger a new API call with filters
+    console.log('Filters updated:', filters);
+  };
+
+  // Handle filter removal
+  const handleRemoveFilter = (filterType, value) => {
+    setActiveFilters(prev => ({
+      ...prev,
+      [filterType]: prev[filterType].filter(v => v !== value)
+    }));
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Total Volume Card */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Volume</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">
-                {formatCurrency(analytics.totalVolume)}
-              </p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-full">
-              <svg
-                className="w-8 h-8 text-green-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-          </div>
-          <p className="mt-2 text-sm text-gray-500">Completed transactions only</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Page Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-md border-b border-white/20 sticky top-0 z-40 shadow-lg"
+      >
+        <div className="px-6 py-4">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Transaction Analytics
+          </h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            Real-time insights and performance metrics
+          </p>
+        </div>
+      </motion.div>
+
+      <div className="p-6 space-y-6">
+        {/* Filter Bar */}
+        <FilterBar
+          onFilterChange={handleFilterChange}
+          activeFilters={activeFilters}
+          onRemoveFilter={handleRemoveFilter}
+        />
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <MetricCard
+            title="Total Volume"
+            value={analytics.totalVolume}
+            format="currency"
+            icon={DollarSign}
+            trend={30}
+            subtitle="Completed transactions only"
+            gradientFrom="from-green-500"
+            gradientTo="to-emerald-600"
+          />
+          <MetricCard
+            title="Total Transactions"
+            value={analytics.totalTransactions}
+            format="number"
+            icon={CreditCard}
+            trend={25}
+            subtitle="All statuses included"
+            gradientFrom="from-blue-500"
+            gradientTo="to-indigo-600"
+          />
+          <MetricCard
+            title="Average Amount"
+            value={analytics.averageTransactionAmount}
+            format="currency"
+            decimals={2}
+            icon={TrendingUp}
+            trend={-7}
+            subtitle="Per completed transaction"
+            gradientFrom="from-purple-500"
+            gradientTo="to-pink-600"
+          />
+          <MetricCard
+            title="Success Rate"
+            value={analytics.successRate}
+            format="percentage"
+            decimals={2}
+            icon={Target}
+            trend={5}
+            subtitle="Completed vs total"
+            gradientFrom="from-amber-500"
+            gradientTo="to-orange-600"
+          />
         </div>
 
-        {/* Total Transactions Card */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Transactions</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">
-                {analytics.totalTransactions.toLocaleString()}
-              </p>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-full">
-              <svg
-                className="w-8 h-8 text-blue-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
-              </svg>
-            </div>
-          </div>
-          <p className="mt-2 text-sm text-gray-500">All statuses included</p>
+        {/* Charts Row 1 - Status & Sources */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Status Breakdown Donut Chart */}
+          <EnhancedDonutChart
+            data={statusData}
+            title="Transactions by Status"
+            subtitle="Distribution across all statuses"
+          />
+
+          {/* Top Sources Bar Chart */}
+          <EnhancedBarChart
+            data={sourcesData}
+            title="Top Transaction Sources"
+            subtitle="Leading sources by transaction count"
+            dataKey="count"
+            labelKey="source"
+          />
         </div>
 
-        {/* Average Transaction Card */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Average Amount</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">
-                {formatCurrency(analytics.averageTransactionAmount)}
-              </p>
-            </div>
-            <div className="p-3 bg-purple-100 rounded-full">
-              <svg
-                className="w-8 h-8 text-purple-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                />
-              </svg>
-            </div>
-          </div>
-          <p className="mt-2 text-sm text-gray-500">Per completed transaction</p>
-        </div>
+        {/* Volume Over Time Area Chart */}
+        <EnhancedAreaChart
+          data={volumeData}
+          title="Transaction Volume Over Time"
+          subtitle="Dual-axis view of volume and count"
+        />
 
-        {/* Success Rate Card */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Success Rate</p>
-              <p className="mt-2 text-3xl font-bold text-gray-900">
-                {analytics.successRate.toFixed(2)}%
-              </p>
-            </div>
-            <div className="p-3 bg-yellow-100 rounded-full">
-              <svg
-                className="w-8 h-8 text-yellow-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                />
-              </svg>
-            </div>
-          </div>
-          <p className="mt-2 text-sm text-gray-500">Completed vs total</p>
-        </div>
-      </div>
+        {/* Charts Row 2 - Heatmap & Performance */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Transaction Heatmap */}
+          <HeatmapChart
+            data={heatmapData}
+            title="Transaction Activity Heatmap"
+            subtitle="Last 90 days of transaction density"
+          />
 
-      {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Status Breakdown Donut Chart */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Transactions by Status
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={statusData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={5}
-                dataKey="value"
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-              >
-                {statusData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            {statusData.map((item) => (
-              <div key={item.name} className="flex items-center">
-                <div
-                  className="w-3 h-3 rounded-full mr-2"
-                  style={{ backgroundColor: item.color }}
-                ></div>
-                <span className="text-sm text-gray-600">
-                  {item.name}: <span className="font-medium">{item.value}</span>
-                </span>
-              </div>
-            ))}
-          </div>
+          {/* Performance Radar Chart */}
+          <RadarChart
+            currentData={analytics}
+            previousData={previousPeriodData}
+            title="Performance Comparison"
+          />
         </div>
-
-        {/* Top Sources Bar Chart */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Top Sources by Count
-          </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={sourcesData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="source" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="count" fill="#3b82f6" name="Transaction Count" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Volume Over Time Line Chart */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Volume Over Time
-        </h3>
-        <ResponsiveContainer width="100%" height={350}>
-          <LineChart data={volumeData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis yAxisId="left" />
-            <YAxis yAxisId="right" orientation="right" />
-            <Tooltip
-              formatter={(value, name) => {
-                if (name === 'volume') return formatCurrency(value);
-                return value;
-              }}
-            />
-            <Legend />
-            <Line
-              yAxisId="left"
-              type="monotone"
-              dataKey="volume"
-              stroke="#10b981"
-              strokeWidth={2}
-              name="Volume ($)"
-              dot={{ r: 4 }}
-            />
-            <Line
-              yAxisId="right"
-              type="monotone"
-              dataKey="count"
-              stroke="#3b82f6"
-              strokeWidth={2}
-              name="Count"
-              dot={{ r: 4 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
       </div>
     </div>
   );
