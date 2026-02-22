@@ -1,0 +1,116 @@
+# Docker Compose - Base Configuration
+# Merchant Transaction Portal
+# AI-generated: 100%
+#
+# Usage:
+#   Development: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+#   Production:  docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+version: '3.9'
+
+services:
+  # ==============================================
+  # PostgreSQL Database
+  # ==============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: merchant-portal-postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-merchant_portal_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-CHANGE_ME_STRONG_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-merchant_portal_db}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - pg_backup:/backups
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-merchant_portal_user} -d ${POSTGRES_DB:-merchant_portal_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - merchant-portal-network
+    restart: unless-stopped
+
+  # ==============================================
+  # Backend API (Express.js)
+  # ==============================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: merchant-portal-backend
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-merchant_portal_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-merchant_portal_db}
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=3000
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - merchant-portal-network
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ==============================================
+  # Frontend (React + Nginx)
+  # ==============================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+      args:
+        - VITE_API_BASE_URL=/api
+    container_name: merchant-portal-frontend
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - merchant-portal-network
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# ==============================================
+# Networks
+# ==============================================
+networks:
+  merchant-portal-network:
+    driver: bridge
+    name: merchant-portal-network
+
+# ==============================================
+# Volumes
+# ==============================================
+volumes:
+  pg_data:
+    name: merchant-portal-pg-data
+    driver: local
+  pg_backup:
+    name: merchant-portal-pg-backup
+    driver: local

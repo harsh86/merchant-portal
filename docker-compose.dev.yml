@@ -1,0 +1,78 @@
+# Docker Compose - Development Overrides
+# Merchant Transaction Portal
+# AI-generated: 100%
+#
+# Usage:
+#   docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Features:
+#   - Hot reload with bind mounts
+#   - PostgreSQL exposed on port 5433
+#   - Adminer database UI on port 8080
+#   - Verbose debug logging
+
+version: '3.9'
+
+services:
+  # ==============================================
+  # PostgreSQL - Development Overrides
+  # ==============================================
+  postgres:
+    ports:
+      - "5433:5432"  # Expose for local database tools (DBeaver, pgAdmin)
+    environment:
+      - POSTGRES_PASSWORD=dev_password_change_me  # Weaker password for dev only
+    command:
+      - "postgres"
+      - "-c"
+      - "log_statement=all"  # Log all SQL queries for debugging
+
+  # ==============================================
+  # Backend - Development Overrides
+  # ==============================================
+  backend:
+    build:
+      target: development  # Use development stage from Dockerfile
+    volumes:
+      - ./backend/src:/app/src:ro  # Read-only bind mount for hot reload
+      - /app/node_modules  # Prevent overwriting container node_modules
+    command: npm run dev  # Use nodemon or --watch flag
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+      - CORS_ORIGIN=*  # Allow all origins in dev
+    ports:
+      - "3000:3000"  # Expose backend directly for debugging
+
+  # ==============================================
+  # Frontend - Development Overrides
+  # ==============================================
+  frontend:
+    build:
+      target: builder  # Use builder stage (Node.js) instead of production (Nginx)
+    volumes:
+      - ./frontend/src:/app/src:ro  # Read-only bind mount for hot reload
+      - /app/node_modules  # Prevent overwriting container node_modules
+    command: npm run dev -- --host 0.0.0.0  # Use Vite dev server with network exposure
+    ports:
+      - "5173:5173"  # Vite dev server port
+    environment:
+      - VITE_API_BASE_URL=http://localhost:3000/api  # Direct backend access in dev
+
+  # ==============================================
+  # Adminer - Database Admin UI (Dev Only)
+  # ==============================================
+  adminer:
+    image: adminer:4-standalone
+    container_name: merchant-portal-adminer
+    ports:
+      - "8080:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres
+      - ADMINER_DESIGN=nette  # Clean UI theme
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - merchant-portal-network
+    restart: unless-stopped

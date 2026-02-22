@@ -1,0 +1,110 @@
+# Docker Compose - Production Overrides
+# Merchant Transaction Portal
+# AI-generated: 100%
+#
+# Usage:
+#   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Features:
+#   - Resource limits enforced
+#   - No bind mounts (immutable containers)
+#   - No exposed database ports
+#   - Always restart policy
+#   - Minimal logging
+
+version: '3.9'
+
+services:
+  # ==============================================
+  # PostgreSQL - Production Overrides
+  # ==============================================
+  postgres:
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '1.0'
+          memory: 512M
+    # No ports exposed - internal network only
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}  # Must be set in .env
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ==============================================
+  # Backend - Production Overrides
+  # ==============================================
+  backend:
+    build:
+      target: production
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=warn  # Only warnings and errors
+      - CORS_ORIGIN=${CORS_ORIGIN:-https://merchant.example.com}
+    # No ports exposed - accessed via nginx proxy only
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ==============================================
+  # Frontend - Production Overrides
+  # ==============================================
+  frontend:
+    build:
+      target: production
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    ports:
+      - "80:80"
+      - "443:443"  # HTTPS (requires SSL certificates)
+    # Uncomment below to enable SSL in production
+    # volumes:
+    #   - ./ssl/cert.pem:/etc/nginx/ssl/cert.pem:ro
+    #   - ./ssl/key.pem:/etc/nginx/ssl/key.pem:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+# ==============================================
+# Production Volume Backups
+# ==============================================
+# Uncomment to enable volume backup strategy
+# volumes:
+#   pg_data:
+#     driver: local
+#     driver_opts:
+#       type: none
+#       o: bind
+#       device: /mnt/data/merchant-portal/pg_data
+#   pg_backup:
+#     driver: local
+#     driver_opts:
+#       type: none
+#       o: bind
+#       device: /mnt/backups/merchant-portal
