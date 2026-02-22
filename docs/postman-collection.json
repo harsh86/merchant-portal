@@ -1,0 +1,1150 @@
+{
+  "info": {
+    "name": "Merchant Transaction Portal API",
+    "description": "Comprehensive test collection for all API endpoints with positive and negative test cases",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "merchant_id",
+      "value": "00000000-0000-0000-0000-000000000001",
+      "type": "string"
+    },
+    {
+      "key": "transaction_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "GET /health - Success",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has status healthy', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('healthy');",
+                  "});",
+                  "",
+                  "pm.test('Response has timestamp', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.timestamp).to.be.a('string');",
+                  "});",
+                  "",
+                  "pm.test('Response has uptime', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.uptime).to.be.a('number');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n    \"status\": \"healthy\",\n    \"timestamp\": \"2024-01-15T10:30:00.000Z\",\n    \"uptime\": 123.456\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "item": [
+        {
+          "name": "POST /api/webhooks/ingest - Valid Data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response has success true', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test('Response has transaction_id', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.transaction_id).to.be.a('string');",
+                  "    pm.collectionVariables.set('transaction_id', jsonData.data.transaction_id);",
+                  "});",
+                  "",
+                  "pm.test('Response has webhook_log_id', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.webhook_log_id).to.be.a('string');",
+                  "});",
+                  "",
+                  "pm.test('Response has success message', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.eql('Transaction created successfully');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"source\": \"stripe\",\n    \"merchant_id\": \"{{merchant_id}}\",\n    \"amount\": 150.50,\n    \"currency\": \"USD\",\n    \"status\": \"completed\",\n    \"transaction_id\": \"txn_{{$randomUUID}}\",\n    \"metadata\": {\n        \"customer_email\": \"customer@example.com\",\n        \"stripe_charge_id\": \"ch_{{$randomAlphaNumeric}}\"\n    }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/webhooks/ingest",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "webhooks", "ingest"]
+            }
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n    \"success\": true,\n    \"data\": {\n        \"transaction_id\": \"a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6\",\n        \"webhook_log_id\": \"b2c3d4e5-f6g7-8h9i-0j1k-l2m3n4o5p6q7\"\n    },\n    \"message\": \"Transaction created successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST /api/webhooks/ingest - Missing Required Field (source)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Response has error object', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error).to.be.an('object');",
+                  "});",
+                  "",
+                  "pm.test('Error code is VALIDATION_ERROR', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.code).to.eql('VALIDATION_ERROR');",
+                  "});",
+                  "",
+                  "pm.test('Error details exist', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.details).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"merchant_id\": \"{{merchant_id}}\",\n    \"amount\": 100.00,\n    \"currency\": \"USD\",\n    \"status\": \"completed\",\n    \"transaction_id\": \"txn_missing_source\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/webhooks/ingest",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "webhooks", "ingest"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/webhooks/ingest - Missing Required Field (merchant_id)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error code is VALIDATION_ERROR', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.code).to.eql('VALIDATION_ERROR');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"source\": \"stripe\",\n    \"amount\": 100.00,\n    \"currency\": \"USD\",\n    \"status\": \"completed\",\n    \"transaction_id\": \"txn_missing_merchant\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/webhooks/ingest",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "webhooks", "ingest"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/webhooks/ingest - Invalid UUID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error mentions UUID', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const errors = JSON.stringify(jsonData.error.details);",
+                  "    pm.expect(errors).to.include('UUID');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"source\": \"stripe\",\n    \"merchant_id\": \"not-a-valid-uuid\",\n    \"amount\": 100.00,\n    \"currency\": \"USD\",\n    \"status\": \"completed\",\n    \"transaction_id\": \"txn_invalid_uuid\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/webhooks/ingest",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "webhooks", "ingest"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/webhooks/ingest - Negative Amount",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error mentions non-negative', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const errors = JSON.stringify(jsonData.error.details);",
+                  "    pm.expect(errors).to.include('non-negative');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"source\": \"stripe\",\n    \"merchant_id\": \"{{merchant_id}}\",\n    \"amount\": -50.00,\n    \"currency\": \"USD\",\n    \"status\": \"completed\",\n    \"transaction_id\": \"txn_negative_amount\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/webhooks/ingest",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "webhooks", "ingest"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/webhooks/ingest - Invalid Currency Format",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error code is VALIDATION_ERROR', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.code).to.eql('VALIDATION_ERROR');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"source\": \"stripe\",\n    \"merchant_id\": \"{{merchant_id}}\",\n    \"amount\": 100.00,\n    \"currency\": \"usd\",\n    \"status\": \"completed\",\n    \"transaction_id\": \"txn_invalid_currency\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/webhooks/ingest",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "webhooks", "ingest"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/webhooks/ingest - Invalid Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error code is VALIDATION_ERROR', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.code).to.eql('VALIDATION_ERROR');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"source\": \"stripe\",\n    \"merchant_id\": \"{{merchant_id}}\",\n    \"amount\": 100.00,\n    \"currency\": \"USD\",\n    \"status\": \"invalid_status\",\n    \"transaction_id\": \"txn_invalid_status\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/webhooks/ingest",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "webhooks", "ingest"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/webhooks/ingest - Duplicate Transaction ID (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 409', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "",
+                  "pm.test('Error object exists', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error).to.be.an('object');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"source\": \"stripe\",\n    \"merchant_id\": \"{{merchant_id}}\",\n    \"amount\": 100.00,\n    \"currency\": \"USD\",\n    \"status\": \"completed\",\n    \"transaction_id\": \"txn_duplicate_test_12345\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/webhooks/ingest",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "webhooks", "ingest"]
+            },
+            "description": "Run this request twice to test duplicate handling. First request should succeed (201), second should return 409."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "GET /api/transactions - All Transactions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has data array', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Response has pagination', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.pagination).to.be.an('object');",
+                  "    pm.expect(jsonData.pagination.page).to.be.a('number');",
+                  "    pm.expect(jsonData.pagination.limit).to.be.a('number');",
+                  "    pm.expect(jsonData.pagination.total).to.be.a('number');",
+                  "    pm.expect(jsonData.pagination.totalPages).to.be.a('number');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/transactions - Filter by Source",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('All transactions have correct source', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    jsonData.data.forEach(tx => {",
+                  "        pm.expect(tx.source).to.eql('stripe');",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions?source=stripe",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"],
+              "query": [
+                {
+                  "key": "source",
+                  "value": "stripe"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/transactions - Filter by Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('All transactions have correct status', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    jsonData.data.forEach(tx => {",
+                  "        pm.expect(tx.status).to.eql('completed');",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions?status=completed",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "completed"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/transactions - Multiple Filters",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions?source=stripe&status=completed&merchant_id={{merchant_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"],
+              "query": [
+                {
+                  "key": "source",
+                  "value": "stripe"
+                },
+                {
+                  "key": "status",
+                  "value": "completed"
+                },
+                {
+                  "key": "merchant_id",
+                  "value": "{{merchant_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/transactions - Pagination (page 2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Pagination page is 2', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.pagination.page).to.eql(2);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions?page=2&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "2"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/transactions - Invalid page (0)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error code is VALIDATION_ERROR', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.code).to.eql('VALIDATION_ERROR');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions?page=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/transactions - Invalid limit (0)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error code is VALIDATION_ERROR', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.code).to.eql('VALIDATION_ERROR');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions?limit=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "0"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/transactions - Limit exceeds max (>1000)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error code is VALIDATION_ERROR', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.code).to.eql('VALIDATION_ERROR');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions?limit=2000",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "2000"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/transactions - Invalid Source Format",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions?source=STRIPE",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"],
+              "query": [
+                {
+                  "key": "source",
+                  "value": "STRIPE"
+                }
+              ]
+            },
+            "description": "Source must be lowercase alphanumeric"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/transactions/:id - Valid ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has transaction data', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('object');",
+                  "    pm.expect(jsonData.data.id).to.be.a('string');",
+                  "    pm.expect(jsonData.data.source).to.be.a('string');",
+                  "    pm.expect(jsonData.data.amount).to.be.a('number');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions/{{transaction_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions", "{{transaction_id}}"]
+            },
+            "description": "Use transaction_id from previous webhook ingest call"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/transactions/:id - Invalid UUID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error code is VALIDATION_ERROR', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.code).to.eql('VALIDATION_ERROR');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions/invalid-uuid",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions", "invalid-uuid"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/transactions/:id - Non-existent ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions/00000000-0000-0000-0000-000000000999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions", "00000000-0000-0000-0000-000000000999"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "GET /api/analytics/summary - All Data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has all required fields', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('object');",
+                  "    pm.expect(jsonData.data.totalVolume).to.be.a('number');",
+                  "    pm.expect(jsonData.data.totalTransactions).to.be.a('number');",
+                  "    pm.expect(jsonData.data.countByStatus).to.be.an('object');",
+                  "    pm.expect(jsonData.data.topSources).to.be.an('array');",
+                  "    pm.expect(jsonData.data.averageTransactionAmount).to.be.a('number');",
+                  "    pm.expect(jsonData.data.successRate).to.be.a('number');",
+                  "});",
+                  "",
+                  "pm.test('countByStatus has all status fields', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.countByStatus).to.have.property('pending');",
+                  "    pm.expect(jsonData.data.countByStatus).to.have.property('processing');",
+                  "    pm.expect(jsonData.data.countByStatus).to.have.property('completed');",
+                  "    pm.expect(jsonData.data.countByStatus).to.have.property('failed');",
+                  "    pm.expect(jsonData.data.countByStatus).to.have.property('refunded');",
+                  "    pm.expect(jsonData.data.countByStatus).to.have.property('cancelled');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "summary"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/analytics/summary - Filter by Merchant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/summary?merchant_id={{merchant_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "summary"],
+              "query": [
+                {
+                  "key": "merchant_id",
+                  "value": "{{merchant_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/analytics/summary - Filter by Date Range",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/summary?date_from=2024-01-01T00:00:00Z&date_to=2024-12-31T23:59:59Z",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "summary"],
+              "query": [
+                {
+                  "key": "date_from",
+                  "value": "2024-01-01T00:00:00Z"
+                },
+                {
+                  "key": "date_to",
+                  "value": "2024-12-31T23:59:59Z"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/analytics/summary - Filter by Currency",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/summary?currency=USD",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "summary"],
+              "query": [
+                {
+                  "key": "currency",
+                  "value": "USD"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/analytics/summary - Invalid Currency Format",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error code is VALIDATION_ERROR', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.code).to.eql('VALIDATION_ERROR');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/summary?currency=usd",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "summary"],
+              "query": [
+                {
+                  "key": "currency",
+                  "value": "usd"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/analytics/summary - Invalid Date Format",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Error code is VALIDATION_ERROR', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error.code).to.eql('VALIDATION_ERROR');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/summary?date_from=2024-01-01",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "summary"],
+              "query": [
+                {
+                  "key": "date_from",
+                  "value": "2024-01-01"
+                }
+              ]
+            },
+            "description": "Date must be in ISO 8601 format with timezone"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "404 Not Found",
+      "item": [
+        {
+          "name": "GET /invalid-endpoint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Response has error object', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error).to.be.an('object');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/invalid-endpoint",
+              "host": ["{{baseUrl}}"],
+              "path": ["invalid-endpoint"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

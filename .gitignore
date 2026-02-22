@@ -1,4 +1,35 @@
+# Environment Variables
 .env
 .env.*
+!.env.example
+
+# Dependencies
 node_modules/
+
+# Claude Settings
 .claude/settings.local.json
+
+# Metrics (track generated reports in git, exclude temp files)
+metrics/archive/
+metrics/*.tmp
+metrics/.cache/
+
+# Build outputs
+dist/
+build/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+.nyc_output/
