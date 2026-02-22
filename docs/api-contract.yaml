@@ -1,0 +1,837 @@
+openapi: 3.0.3
+info:
+  title: Merchant Transaction Portal API
+  description: |
+    RESTful API for ingesting and managing merchant transactions from multiple payment sources.
+
+    ## Features
+    - Webhook ingestion from multiple payment providers
+    - Transaction querying with advanced filtering
+    - Analytics and reporting endpoints
+    - Real-time transaction status tracking
+
+    ## Authentication
+    Future versions will require JWT authentication for protected endpoints.
+    Webhook endpoints may require API key validation based on source.
+
+  version: 1.0.0
+  contact:
+    name: Merchant Portal Team
+    email: support@merchantportal.example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server
+  - url: https://api.merchantportal.example.com/api
+    description: Production server
+
+tags:
+  - name: Webhooks
+    description: Endpoints for webhook ingestion from payment providers
+  - name: Transactions
+    description: Transaction management and querying
+  - name: Analytics
+    description: Analytics and reporting endpoints
+
+paths:
+  /webhooks/ingest:
+    post:
+      tags:
+        - Webhooks
+      summary: Ingest webhook from payment source
+      description: |
+        Receives webhook payload from external payment sources (Stripe, PayPal, Square, etc.).
+        Creates transaction record and logs webhook request/response for audit trail.
+
+        ## Idempotency
+        - Duplicate transaction_id will return 409 Conflict
+        - Webhook logs are always created regardless of transaction creation outcome
+
+        ## Rate Limiting
+        - 100 requests per minute per source IP
+        - 429 Too Many Requests if exceeded
+
+      operationId: ingestWebhook
+      requestBody:
+        required: true
+        description: Webhook payload from payment source
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - source
+                - merchant_id
+                - amount
+                - currency
+                - status
+                - transaction_id
+              properties:
+                source:
+                  type: string
+                  description: Payment source identifier (lowercase, alphanumeric with hyphens/underscores)
+                  pattern: '^[a-z0-9_-]+$'
+                  example: stripe
+                  minLength: 1
+                  maxLength: 100
+                merchant_id:
+                  type: string
+                  format: uuid
+                  description: UUID of the merchant associated with this transaction
+                  example: 550e8400-e29b-41d4-a716-446655440000
+                amount:
+                  type: number
+                  format: decimal
+                  description: Transaction amount (must be non-negative)
+                  minimum: 0
+                  example: 150.00
+                currency:
+                  type: string
+                  description: ISO 4217 currency code (uppercase, 3 letters)
+                  pattern: '^[A-Z]{3}$'
+                  example: USD
+                  minLength: 3
+                  maxLength: 3
+                status:
+                  type: string
+                  description: Transaction status (lowercase)
+                  enum:
+                    - pending
+                    - processing
+                    - completed
+                    - failed
+                    - refunded
+                    - cancelled
+                  example: completed
+                transaction_id:
+                  type: string
+                  description: Unique transaction identifier from payment source
+                  example: ch_1234567890abcdef
+                  minLength: 1
+                  maxLength: 255
+                metadata:
+                  type: object
+                  description: Additional source-specific metadata (stored in JSONB payload)
+                  additionalProperties: true
+                  example:
+                    customer_email: customer@example.com
+                    charge_id: ch_abc123
+                    payment_method: card
+            examples:
+              stripe_payment:
+                summary: Stripe payment webhook
+                value:
+                  source: stripe
+                  merchant_id: 550e8400-e29b-41d4-a716-446655440000
+                  amount: 150.00
+                  currency: USD
+                  status: completed
+                  transaction_id: ch_1234567890abcdef
+                  metadata:
+                    customer_email: customer@example.com
+                    stripe_charge_id: ch_1234567890abcdef
+                    payment_method: card
+              paypal_payment:
+                summary: PayPal payment webhook
+                value:
+                  source: paypal
+                  merchant_id: 550e8400-e29b-41d4-a716-446655440000
+                  amount: 75.50
+                  currency: USD
+                  status: completed
+                  transaction_id: PAYID-ABC123XYZ
+                  metadata:
+                    payer_email: payer@example.com
+                    paypal_transaction_id: PAYID-ABC123XYZ
+              failed_transaction:
+                summary: Failed transaction webhook
+                value:
+                  source: stripe
+                  merchant_id: 550e8400-e29b-41d4-a716-446655440000
+                  amount: 99.99
+                  currency: EUR
+                  status: failed
+                  transaction_id: ch_failed_abc123
+                  metadata:
+                    error_code: card_declined
+                    error_message: Your card was declined
+
+      responses:
+        '201':
+          description: Webhook processed successfully, transaction created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      transaction_id:
+                        type: string
+                        format: uuid
+                        description: Internal UUID of created transaction
+                        example: 7f3d8b2a-1c4e-4a9b-8d7f-3e2a1b4c5d6e
+                      webhook_log_id:
+                        type: string
+                        format: uuid
+                        description: UUID of webhook log entry
+                        example: 9a8b7c6d-5e4f-3a2b-1c0d-9e8f7a6b5c4d
+                  message:
+                    type: string
+                    example: Transaction created successfully
+        '400':
+          description: Invalid request payload (validation error)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: VALIDATION_ERROR
+                  message: Invalid request payload
+                  details:
+                    - field: amount
+                      message: must be a non-negative number
+                    - field: currency
+                      message: must be a 3-letter uppercase ISO 4217 code
+                  requestId: req_abc123xyz
+        '409':
+          description: Duplicate transaction ID (idempotency violation)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: DUPLICATE_TRANSACTION
+                  message: Transaction with this ID already exists
+                  requestId: req_abc123xyz
+        '429':
+          description: Rate limit exceeded
+          headers:
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Request limit per window
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: Requests remaining in current window
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+              description: Unix timestamp when rate limit resets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: RATE_LIMIT_EXCEEDED
+                  message: Too many requests, please try again later
+                  requestId: req_abc123xyz
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: INTERNAL_ERROR
+                  message: An unexpected error occurred
+                  requestId: req_abc123xyz
+
+  /transactions:
+    get:
+      tags:
+        - Transactions
+      summary: Get list of transactions with filters
+      description: |
+        Retrieves paginated list of transactions with optional filtering.
+
+        ## Query Parameters
+        - All filters are optional and can be combined
+        - Date filters accept ISO 8601 format (YYYY-MM-DD or full timestamp)
+        - Results are sorted by created_at DESC by default
+
+        ## Pagination
+        - Default page size: 50
+        - Maximum page size: 1000
+        - Page numbering starts at 1
+
+      operationId: getTransactions
+      parameters:
+        - name: source
+          in: query
+          description: Filter by payment source
+          required: false
+          schema:
+            type: string
+            pattern: '^[a-z0-9_-]+$'
+            example: stripe
+        - name: status
+          in: query
+          description: Filter by transaction status
+          required: false
+          schema:
+            type: string
+            enum:
+              - pending
+              - processing
+              - completed
+              - failed
+              - refunded
+              - cancelled
+            example: completed
+        - name: date_from
+          in: query
+          description: Filter transactions created on or after this date (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: '2024-01-01T00:00:00Z'
+        - name: date_to
+          in: query
+          description: Filter transactions created on or before this date (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: '2024-12-31T23:59:59Z'
+        - name: merchant_id
+          in: query
+          description: Filter by merchant UUID
+          required: false
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+        - name: page
+          in: query
+          description: Page number (starts at 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+        - name: limit
+          in: query
+          description: Number of records per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 50
+            example: 50
+        - name: sort_by
+          in: query
+          description: Field to sort by
+          required: false
+          schema:
+            type: string
+            enum:
+              - created_at
+              - amount
+              - status
+            default: created_at
+        - name: sort_order
+          in: query
+          description: Sort order
+          required: false
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: desc
+
+      responses:
+        '200':
+          description: Successful response with paginated transactions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Transaction'
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                        example: 1
+                      limit:
+                        type: integer
+                        example: 50
+                      total:
+                        type: integer
+                        description: Total number of records matching filters
+                        example: 237
+                      totalPages:
+                        type: integer
+                        description: Total number of pages
+                        example: 5
+              examples:
+                transactions_list:
+                  summary: Paginated transactions response
+                  value:
+                    success: true
+                    data:
+                      - id: 7f3d8b2a-1c4e-4a9b-8d7f-3e2a1b4c5d6e
+                        source: stripe
+                        merchant_id: 550e8400-e29b-41d4-a716-446655440000
+                        amount: 150.00
+                        currency: USD
+                        status: completed
+                        payload:
+                          customer_email: customer@example.com
+                          stripe_charge_id: ch_abc123
+                        created_at: '2024-01-15T10:30:00Z'
+                        updated_at: '2024-01-15T10:30:00Z'
+                      - id: 8a9b0c1d-2e3f-4a5b-6c7d-8e9f0a1b2c3d
+                        source: paypal
+                        merchant_id: 550e8400-e29b-41d4-a716-446655440000
+                        amount: 75.50
+                        currency: USD
+                        status: completed
+                        payload:
+                          payer_email: payer@example.com
+                          paypal_transaction_id: txn_xyz789
+                        created_at: '2024-01-14T15:45:00Z'
+                        updated_at: '2024-01-14T15:45:00Z'
+                    pagination:
+                      page: 1
+                      limit: 50
+                      total: 237
+                      totalPages: 5
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /transactions/{id}:
+    get:
+      tags:
+        - Transactions
+      summary: Get transaction by ID
+      description: Retrieves a single transaction by its UUID
+      operationId: getTransactionById
+      parameters:
+        - name: id
+          in: path
+          description: Transaction UUID
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 7f3d8b2a-1c4e-4a9b-8d7f-3e2a1b4c5d6e
+
+      responses:
+        '200':
+          description: Transaction found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Transaction'
+              examples:
+                single_transaction:
+                  summary: Single transaction response
+                  value:
+                    success: true
+                    data:
+                      id: 7f3d8b2a-1c4e-4a9b-8d7f-3e2a1b4c5d6e
+                      source: stripe
+                      merchant_id: 550e8400-e29b-41d4-a716-446655440000
+                      amount: 150.00
+                      currency: USD
+                      status: completed
+                      payload:
+                        customer_email: customer@example.com
+                        stripe_charge_id: ch_abc123
+                        payment_method: card
+                      created_at: '2024-01-15T10:30:00Z'
+                      updated_at: '2024-01-15T10:30:00Z'
+        '404':
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error:
+                  code: NOT_FOUND
+                  message: Transaction not found
+                  requestId: req_abc123xyz
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /analytics/summary:
+    get:
+      tags:
+        - Analytics
+      summary: Get analytics summary
+      description: |
+        Retrieves aggregated analytics data including:
+        - Total transaction volume (sum of completed transactions)
+        - Transaction counts by status
+        - Top 5 payment sources by transaction count
+        - Optional time-based filtering
+
+        ## Performance
+        - Results may be cached for up to 5 minutes
+        - Use date filters to reduce query scope for large datasets
+
+      operationId: getAnalyticsSummary
+      parameters:
+        - name: merchant_id
+          in: query
+          description: Filter analytics by merchant UUID
+          required: false
+          schema:
+            type: string
+            format: uuid
+            example: 550e8400-e29b-41d4-a716-446655440000
+        - name: date_from
+          in: query
+          description: Start date for analytics period (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: '2024-01-01T00:00:00Z'
+        - name: date_to
+          in: query
+          description: End date for analytics period (ISO 8601)
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: '2024-12-31T23:59:59Z'
+        - name: currency
+          in: query
+          description: Filter by currency (volumes will be in this currency only)
+          required: false
+          schema:
+            type: string
+            pattern: '^[A-Z]{3}$'
+            example: USD
+
+      responses:
+        '200':
+          description: Successful analytics summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      totalVolume:
+                        type: number
+                        format: decimal
+                        description: Sum of all completed transaction amounts
+                        example: 15750.50
+                      totalTransactions:
+                        type: integer
+                        description: Total number of transactions
+                        example: 237
+                      countByStatus:
+                        type: object
+                        description: Transaction counts grouped by status
+                        properties:
+                          pending:
+                            type: integer
+                            example: 15
+                          processing:
+                            type: integer
+                            example: 8
+                          completed:
+                            type: integer
+                            example: 200
+                          failed:
+                            type: integer
+                            example: 10
+                          refunded:
+                            type: integer
+                            example: 3
+                          cancelled:
+                            type: integer
+                            example: 1
+                      topSources:
+                        type: array
+                        description: Top 5 payment sources by transaction count
+                        items:
+                          type: object
+                          properties:
+                            source:
+                              type: string
+                              example: stripe
+                            count:
+                              type: integer
+                              example: 120
+                            volume:
+                              type: number
+                              format: decimal
+                              description: Total volume for this source (completed only)
+                              example: 8500.00
+                        example:
+                          - source: stripe
+                            count: 120
+                            volume: 8500.00
+                          - source: paypal
+                            count: 85
+                            volume: 5250.50
+                          - source: square
+                            count: 32
+                            volume: 2000.00
+                      averageTransactionAmount:
+                        type: number
+                        format: decimal
+                        description: Average amount of completed transactions
+                        example: 78.75
+                      successRate:
+                        type: number
+                        format: float
+                        description: Percentage of completed transactions (0-100)
+                        example: 84.38
+                  metadata:
+                    type: object
+                    properties:
+                      currency:
+                        type: string
+                        example: USD
+                      dateRange:
+                        type: object
+                        properties:
+                          from:
+                            type: string
+                            format: date-time
+                            example: '2024-01-01T00:00:00Z'
+                          to:
+                            type: string
+                            format: date-time
+                            example: '2024-12-31T23:59:59Z'
+                      generatedAt:
+                        type: string
+                        format: date-time
+                        description: Timestamp when analytics were generated
+                        example: '2024-01-20T12:00:00Z'
+              examples:
+                analytics_summary:
+                  summary: Full analytics summary
+                  value:
+                    success: true
+                    data:
+                      totalVolume: 15750.50
+                      totalTransactions: 237
+                      countByStatus:
+                        pending: 15
+                        processing: 8
+                        completed: 200
+                        failed: 10
+                        refunded: 3
+                        cancelled: 1
+                      topSources:
+                        - source: stripe
+                          count: 120
+                          volume: 8500.00
+                        - source: paypal
+                          count: 85
+                          volume: 5250.50
+                        - source: square
+                          count: 32
+                          volume: 2000.00
+                      averageTransactionAmount: 78.75
+                      successRate: 84.38
+                    metadata:
+                      currency: USD
+                      dateRange:
+                        from: '2024-01-01T00:00:00Z'
+                        to: '2024-12-31T23:59:59Z'
+                      generatedAt: '2024-01-20T12:00:00Z'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Transaction:
+      type: object
+      description: Transaction record from payment source
+      required:
+        - id
+        - source
+        - merchant_id
+        - amount
+        - currency
+        - status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Internal transaction UUID
+          example: 7f3d8b2a-1c4e-4a9b-8d7f-3e2a1b4c5d6e
+        source:
+          type: string
+          description: Payment source identifier
+          pattern: '^[a-z0-9_-]+$'
+          example: stripe
+        merchant_id:
+          type: string
+          format: uuid
+          description: Merchant UUID
+          example: 550e8400-e29b-41d4-a716-446655440000
+        amount:
+          type: number
+          format: decimal
+          description: Transaction amount
+          minimum: 0
+          example: 150.00
+        currency:
+          type: string
+          description: ISO 4217 currency code
+          pattern: '^[A-Z]{3}$'
+          example: USD
+        status:
+          type: string
+          description: Transaction status
+          enum:
+            - pending
+            - processing
+            - completed
+            - failed
+            - refunded
+            - cancelled
+          example: completed
+        payload:
+          type: object
+          description: Source-specific metadata (JSONB)
+          additionalProperties: true
+          example:
+            customer_email: customer@example.com
+            stripe_charge_id: ch_abc123
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when transaction was created
+          example: '2024-01-15T10:30:00Z'
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when transaction was last updated
+          example: '2024-01-15T10:30:00Z'
+
+    Error:
+      type: object
+      description: Standard error response format
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: Machine-readable error code
+              enum:
+                - VALIDATION_ERROR
+                - NOT_FOUND
+                - DUPLICATE_TRANSACTION
+                - RATE_LIMIT_EXCEEDED
+                - INTERNAL_ERROR
+                - UNAUTHORIZED
+                - FORBIDDEN
+              example: VALIDATION_ERROR
+            message:
+              type: string
+              description: Human-readable error message
+              example: Invalid request payload
+            details:
+              type: array
+              description: Detailed validation errors (for VALIDATION_ERROR)
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                    example: amount
+                  message:
+                    type: string
+                    example: must be a non-negative number
+            requestId:
+              type: string
+              description: Unique request identifier for debugging
+              example: req_abc123xyz
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT authentication (future implementation)
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for webhook endpoints (future implementation)
+
+# Future: Apply security globally
+# security:
+#   - bearerAuth: []
+
+externalDocs:
+  description: Full project documentation
+  url: https://github.com/your-org/merchant-portal/blob/main/README.md
