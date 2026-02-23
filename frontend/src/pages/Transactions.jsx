@@ -219,11 +219,11 @@ const Transactions = () => {
                     Source
                   </label>
                   <Select
-                    value={filters.source}
-                    onValueChange={(value) => handleFilterChange('source', value)}
+                    value={filters.source || undefined}
+                    onValueChange={(value) => handleFilterChange('source', value === 'all' ? '' : value)}
                     placeholder="All Sources"
                   >
-                    <SelectItem value="">All Sources</SelectItem>
+                    <SelectItem value="all">All Sources</SelectItem>
                     <SelectItem value="stripe">Stripe</SelectItem>
                     <SelectItem value="paypal">PayPal</SelectItem>
                     <SelectItem value="square">Square</SelectItem>
@@ -236,11 +236,11 @@ const Transactions = () => {
                     Status
                   </label>
                   <Select
-                    value={filters.status}
-                    onValueChange={(value) => handleFilterChange('status', value)}
+                    value={filters.status || undefined}
+                    onValueChange={(value) => handleFilterChange('status', value === 'all' ? '' : value)}
                     placeholder="All Statuses"
                   >
-                    <SelectItem value="">All Statuses</SelectItem>
+                    <SelectItem value="all">All Statuses</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="processing">Processing</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
